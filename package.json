@@ -1,0 +1,71 @@
+{
+  "name": "smartliving-iot-dashboard",
+  "version": "1.0.0",
+  "description": "IoT Dashboard for Smart Home with Azure services and Microsoft SQL",
+  "main": "index.js",
+  "private": true,
+  "workspaces": [
+    "src/azure-functions",
+    "src/dashboard",
+    "src/device-simulator"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:functions\" \"npm run dev:dashboard\"",
+    "dev:functions": "cd src/azure-functions && npm run start",
+    "dev:dashboard": "cd src/dashboard && npm run start",
+    "build": "npm run build:functions && npm run build:dashboard",
+    "build:functions": "cd src/azure-functions && npm run build",
+    "build:dashboard": "cd src/dashboard && npm run build",
+    "test": "npm run test:functions && npm run test:dashboard",
+    "test:functions": "cd src/azure-functions && npm run test",
+    "test:dashboard": "cd src/dashboard && npm run test",
+    "deploy:infrastructure": "cd src/infrastructure && az deployment group create --resource-group smartliving-rg --template-file main.bicep",
+    "deploy:functions": "cd src/azure-functions && func azure functionapp publish smartliving-functions",
+    "deploy:dashboard": "cd src/dashboard && npm run build && az storage blob upload-batch -d '$web' -s build --account-name smartlivingweb",
+    "deploy": "npm run build && npm run deploy:functions && npm run deploy:dashboard",
+    "azure:setup": "node scripts/azure-setup.js",
+    "db:migrate": "cd src/database && npm run migrate",
+    "db:seed": "cd src/database && npm run seed",
+    "simulate:devices": "cd src/device-simulator && npm run start",
+    "postinstall": "npm install --prefix src/azure-functions && npm install --prefix src/dashboard && npm install --prefix src/device-simulator"
+  },
+  "keywords": [
+    "iot",
+    "smart-home",
+    "azure",
+    "dashboard",
+    "react",
+    "mqtt",
+    "real-time",
+    "chart.js",
+    "typescript"
+  ],
+  "author": "Dominicksam",
+  "license": "MIT",
+  "devDependencies": {
+    "@azure/cli": "^2.53.0",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "eslint": "^8.55.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.2"
+  },
+  "dependencies": {
+    "@azure/arm-resources": "^5.2.0",
+    "@azure/identity": "^3.4.2",
+    "@azure/keyvault-secrets": "^4.7.0",
+    "dotenv": "^16.3.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Dominicksam/SmartLiving.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Dominicksam/SmartLiving/issues"
+  },
+  "homepage": "https://github.com/Dominicksam/SmartLiving#readme"
+}
