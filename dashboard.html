@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartLiving IoT Dashboard</title>
+    
+    <!-- Material Design Icons -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Roboto Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .dashboard-header {
+            background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+            color: white;
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .connection-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(255,255,255,0.1);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4caf50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid #eee;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .card-icon {
+            color: #1976d2;
+        }
+
+        .metric-value {
+            font-size: 2rem;
+            font-weight: 600;
+            color: #1976d2;
+            margin: 0.5rem 0;
+        }
+
+        .metric-unit {
+            font-size: 0.9rem;
+            color: #666;
+            margin-left: 0.5rem;
+        }
+
+        .metric-change {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .metric-change.positive {
+            color: #4caf50;
+        }
+
+        .metric-change.negative {
+            color: #f44336;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 1rem;
+        }
+
+        .device-list {
+            list-style: none;
+        }
+
+        .device-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .device-item:last-child {
+            border-bottom: none;
+        }
+
+        .device-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .device-name {
+            font-weight: 500;
+            color: #333;
+        }
+
+        .device-location {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .device-status {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-online {
+            color: #4caf50;
+        }
+
+        .status-offline {
+            color: #f44336;
+        }
+
+        .control-button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+            font-size: 0.9rem;
+        }
+
+        .control-button:hover {
+            background: #1565c0;
+        }
+
+        .control-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1976d2;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 0.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+            
+            .chart-container {
+                height: 250px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-header">
+        <div class="header-content">
+            <div class="logo">
+                <span class="material-icons">home</span>
+                SmartLiving Dashboard
+            </div>
+            <div class="connection-status">
+                <div class="status-dot"></div>
+                Connected to IoT Hub
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-container">
+        <!-- Quick Stats -->
+        <div class="quick-stats">
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Active Devices</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">23.5°C</div>
+                <div class="stat-label">Avg Temperature</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">2.4 kWh</div>
+                <div class="stat-label">Energy Today</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">3</div>
+                <div class="stat-label">Active Rules</div>
+            </div>
+        </div>
+
+        <!-- Main Dashboard Grid -->
+        <div class="dashboard-grid">
+            <!-- Temperature Chart -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title">Temperature Trends</h3>
+                    <span class="material-icons card-icon">thermostat</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="temperatureChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Humidity Chart -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title">Humidity Levels</h3>
+                    <span class="material-icons card-icon">water_drop</span>
+                </div>
+                <div class="chart-container">
+                    <canvas id="humidityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Energy Consumption -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title">Energy Consumption</h3>
+                    <span class="material-icons card-icon">electric_bolt</span>
+                </div>
+                <div class="metric-value">
+                    2.4<span class="metric-unit">kWh</span>
+                </div>
+                <div class="metric-change positive">
+                    <span class="material-icons">trending_down</span>
+                    12% less than yesterday
+                </div>
+                <div class="chart-container">
+                    <canvas id="energyChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Device Status -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title">Device Status</h3>
+                    <span class="material-icons card-icon">devices</span>
+                </div>
+                <ul class="device-list" id="deviceList">
+                    <li class="device-item">
+                        <div class="device-info">
+                            <span class="device-name">Living Room Temperature</span>
+                            <span class="device-location">Living Room</span>
+                        </div>
+                        <div class="device-status status-online">
+                            <span class="material-icons">wifi</span>
+                            Online
+                        </div>
+                    </li>
+                    <li class="device-item">
+                        <div class="device-info">
+                            <span class="device-name">Bedroom Smart Light</span>
+                            <span class="device-location">Bedroom</span>
+                        </div>
+                        <div class="device-status">
+                            <button class="control-button" onclick="toggleDevice('bedroom-light')">
+                                Turn On
+                            </button>
+                        </div>
+                    </li>
+                    <li class="device-item">
+                        <div class="device-info">
+                            <span class="device-name">Kitchen Humidity Sensor</span>
+                            <span class="device-location">Kitchen</span>
+                        </div>
+                        <div class="device-status status-online">
+                            <span class="material-icons">wifi</span>
+                            Online
+                        </div>
+                    </li>
+                    <li class="device-item">
+                        <div class="device-info">
+                            <span class="device-name">Garage Door Controller</span>
+                            <span class="device-location">Garage</span>
+                        </div>
+                        <div class="device-status status-offline">
+                            <span class="material-icons">wifi_off</span>
+                            Offline
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample data for demonstration
+        const temperatureData = {
+            labels: [],
+            datasets: [{
+                label: 'Living Room',
+                data: [],
+                borderColor: '#1976d2',
+                backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                tension: 0.1
+            }, {
+                label: 'Bedroom',
+                data: [],
+                borderColor: '#dc004e',
+                backgroundColor: 'rgba(220, 0, 78, 0.1)',
+                tension: 0.1
+            }]
+        };
+
+        const humidityData = {
+            labels: [],
+            datasets: [{
+                label: 'Kitchen Humidity',
+                data: [],
+                borderColor: '#4caf50',
+                backgroundColor: 'rgba(76, 175, 80, 0.1)',
+                tension: 0.1
+            }]
+        };
+
+        const energyData = {
+            labels: [],
+            datasets: [{
+                label: 'Energy (kWh)',
+                data: [],
+                borderColor: '#ff9800',
+                backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                tension: 0.1
+            }]
+        };
+
+        // Initialize charts
+        const temperatureChart = new Chart(document.getElementById('temperatureChart'), {
+            type: 'line',
+            data: temperatureData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 18,
+                        max: 28
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                }
+            }
+        });
+
+        const humidityChart = new Chart(document.getElementById('humidityChart'), {
+            type: 'line',
+            data: humidityData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100
+                    }
+                }
+            }
+        });
+
+        const energyChart = new Chart(document.getElementById('energyChart'), {
+            type: 'bar',
+            data: energyData,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Function to generate random data
+        function generateRandomData() {
+            const now = new Date();
+            const time = now.toLocaleTimeString();
+            
+            // Temperature data
+            const livingRoomTemp = 22 + Math.sin(Date.now() / 60000) * 3 + (Math.random() - 0.5) * 2;
+            const bedroomTemp = 21 + Math.cos(Date.now() / 80000) * 2 + (Math.random() - 0.5) * 1.5;
+            
+            temperatureData.labels.push(time);
+            temperatureData.datasets[0].data.push(livingRoomTemp.toFixed(1));
+            temperatureData.datasets[1].data.push(bedroomTemp.toFixed(1));
+            
+            // Humidity data
+            const humidity = 45 + Math.sin(Date.now() / 120000) * 10 + (Math.random() - 0.5) * 5;
+            humidityData.labels.push(time);
+            humidityData.datasets[0].data.push(humidity.toFixed(1));
+            
+            // Energy data
+            const energy = 2.5 + Math.sin(Date.now() / 300000) * 1 + (Math.random() - 0.5) * 0.5;
+            energyData.labels.push(time);
+            energyData.datasets[0].data.push(energy.toFixed(2));
+            
+            // Keep only last 20 data points
+            if (temperatureData.labels.length > 20) {
+                temperatureData.labels.shift();
+                temperatureData.datasets[0].data.shift();
+                temperatureData.datasets[1].data.shift();
+                humidityData.labels.shift();
+                humidityData.datasets[0].data.shift();
+                energyData.labels.shift();
+                energyData.datasets[0].data.shift();
+            }
+            
+            // Update charts
+            temperatureChart.update('none');
+            humidityChart.update('none');
+            energyChart.update('none');
+        }
+
+        // Device control function
+        function toggleDevice(deviceId) {
+            const button = event.target;
+            const isOn = button.textContent === 'Turn Off';
+            
+            button.disabled = true;
+            button.textContent = 'Processing...';
+            
+            setTimeout(() => {
+                button.textContent = isOn ? 'Turn On' : 'Turn Off';
+                button.disabled = false;
+                
+                // Show feedback
+                const status = isOn ? 'turned off' : 'turned on';
+                showNotification(`Device ${status} successfully!`);
+            }, 1500);
+        }
+
+        // Notification function
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #4caf50;
+                color: white;
+                padding: 1rem;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Add slideIn animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Start generating data
+        generateRandomData(); // Initial data
+        setInterval(generateRandomData, 5000); // Update every 5 seconds
+
+        // Simulate real-time connection status
+        let isConnected = true;
+        setInterval(() => {
+            const statusDot = document.querySelector('.status-dot');
+            const statusText = document.querySelector('.connection-status');
+            
+            // Randomly simulate connection issues (very rarely)
+            if (Math.random() < 0.02) { // 2% chance
+                isConnected = !isConnected;
+                statusDot.style.backgroundColor = isConnected ? '#4caf50' : '#f44336';
+                statusText.lastChild.textContent = isConnected ? 'Connected to IoT Hub' : 'Connection Lost';
+            }
+        }, 1000);
+
+        console.log('🏠 SmartLiving Dashboard Loaded Successfully!');
+        console.log('📊 Real-time data simulation active');
+        console.log('🔗 Ready for Azure IoT Hub integration');
+    </script>
+</body>
+</html>
